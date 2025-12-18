@@ -1,4 +1,4 @@
-name: Windows RDP Stable
+name: Windows RDP Stable (FINAL)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: Enable RDP (no restart)
+      - name: Enable RDP
         run: |
           Set-ItemProperty `
             -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' `
@@ -18,9 +18,10 @@ jobs:
 
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-      - name: Create RDP User
+      - name: Create RDP User (VALID PASSWORD)
         run: |
-          $password = "1234"
+          # Strong password that always passes Windows policy
+          $password = "Rdp@1234!"
           $secure = ConvertTo-SecureString $password -AsPlainText -Force
 
           if (Get-LocalUser -Name "rdp" -ErrorAction SilentlyContinue) {
@@ -30,6 +31,8 @@ jobs:
           New-LocalUser -Name "rdp" -Password $secure -AccountNeverExpires
           Add-LocalGroupMember -Group "Administrators" -Member "rdp"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "rdp"
+
+          echo "RDP_PASSWORD=$password" >> $env:GITHUB_ENV
 
       - name: Install Tailscale
         run: |
@@ -53,7 +56,7 @@ jobs:
           Write-Host "=============================="
           Write-Host "RDP ADDRESS : $ip"
           Write-Host "USERNAME    : rdp"
-          Write-Host "PASSWORD    : 1234"
+          Write-Host "PASSWORD    : $env:RDP_PASSWORD"
           Write-Host "=============================="
 
           while ($true) {
