@@ -1,4 +1,4 @@
-name: Windows RDP + SOCKS5 Proxy
+name: Windows RDP + SOCKS5 Proxy (FINAL)
 
 on:
   workflow_dispatch:
@@ -49,7 +49,7 @@ jobs:
             --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} `
             --hostname=gh-win-all
 
-      - name: Download gost (proxy)
+      - name: Download gost (SOCKS5 proxy)
         run: |
           Invoke-WebRequest `
             https://github.com/go-gost/gost/releases/download/v3.0.0/gost_3.0.0_windows_amd64.zip `
@@ -64,15 +64,29 @@ jobs:
             -ArgumentList "-L=socks5://:1080" `
             -WindowStyle Hidden
 
-      - name: Show Access Info + Keep Alive
+      - name: Show RDP + Proxy Info (WAIT FOR IP)
         run: |
-          $ip = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+          $ts = "C:\Program Files\Tailscale\tailscale.exe"
+          $ip = ""
+
+          for ($i = 0; $i -lt 20; $i++) {
+            $ip = & $ts ip -4
+            if ($ip) { break }
+            Start-Sleep 3
+          }
+
+          if (-not $ip) {
+            Write-Error "Tailscale IP not assigned"
+            exit 1
+          }
 
           Write-Host "=============================="
-          Write-Host "RDP  : $ip:3389"
-          Write-Host "USER : rdp"
-          Write-Host "PASS : 1234"
-          Write-Host "PROXY: $ip:1080 (SOCKS5)"
+          Write-Host "RDP   : $ip:3389"
+          Write-Host "USER  : rdp"
+          Write-Host "PASS  : 1234"
+          Write-Host "PROXY : $ip:1080 (SOCKS5)"
           Write-Host "=============================="
 
-          while ($true) { Start-Sleep 300 }
+          while ($true) {
+            Start-Sleep 300
+          }
