@@ -1,4 +1,4 @@
-name: Windows RDP Stable (FINAL)
+name: Windows RDP Stable (ACTUALLY FINAL)
 
 on:
   workflow_dispatch:
@@ -18,10 +18,20 @@ jobs:
 
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-      - name: Create RDP User (VALID PASSWORD)
+      - name: Disable password complexity (TEMP)
         run: |
-          # Strong password that always passes Windows policy
-          $password = "Rdp@1234!"
+          secedit /export /cfg C:\secpol.cfg
+          (Get-Content C:\secpol.cfg) `
+            -replace "PasswordComplexity = 1","PasswordComplexity = 0" `
+            -replace "MinimumPasswordLength = \d+","MinimumPasswordLength = 4" |
+            Set-Content C:\secpol.cfg
+
+          secedit /configure /db C:\Windows\security\local.sdb /cfg C:\secpol.cfg /areas SECURITYPOLICY
+          gpupdate /force
+
+      - name: Create RDP User (NOW IT WILL WORK)
+        run: |
+          $password = "1234"
           $secure = ConvertTo-SecureString $password -AsPlainText -Force
 
           if (Get-LocalUser -Name "rdp" -ErrorAction SilentlyContinue) {
