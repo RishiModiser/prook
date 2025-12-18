@@ -1,0 +1,27 @@
+name: Single SOCKS5 Proxy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Start SOCKS5
+        run: |
+          sudo apt update -y
+          sudo apt install -y dante-server
+          cat <<'EOF' | sudo tee /etc/danted.conf
+internal: eth0 port = 1080
+external: eth0
+socksmethod: none
+clientmethod: none
+user.privileged: root
+user.unprivileged: nobody
+client pass { from: 0.0.0.0/0 to: 0.0.0.0/0 }
+pass { from: 0.0.0.0/0 to: 0.0.0.0/0 }
+EOF
+          sudo danted
+          echo "PROXY=$(curl -s https://api.ipify.org):1080"
+          sleep 21600
